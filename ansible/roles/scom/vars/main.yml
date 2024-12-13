@@ -1,0 +1,5 @@
+---
+partition_style: GPT
+file_system_type: NTFS
+allocation_unit_size: 4096
+volume_label: "SCOMData"

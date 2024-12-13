@@ -1,0 +1,25 @@
+- hosts: sql
+  gather_facts: no
+  roles:
+    - sql
+
+- hosts: mecm
+  gather_facts: no
+  roles:
+    - mecm
+
+- hosts: mecmsup
+  gather_facts: no
+  roles:
+    - mecmsup
+
+- hosts: fileservers
+  gather_facts: no
+  roles:
+    - fileservers
+
+- hosts: scom
+  gather_facts: no
+  roles:
+    - scom
+

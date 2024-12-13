@@ -1,0 +1,78 @@
+---
+- name: "Bring online all offline disks, initialize, and format"
+  win_shell: |
+    # Bring online all offline disks, initialize them, format as NTFS with custom cluster size, and assign drive letters
+    Get-Disk | Where-Object { $_.OperationalStatus -eq 'Offline' } | ForEach-Object {
+        $disk = $_
+
+        # Bring the disk online
+        Set-Disk -Number $disk.Number -IsOffline $False
+
+        # Initialize the disk (use GPT or MBR depending on your requirement)
+        Initialize-Disk -Number $disk.Number -PartitionStyle {{ partition_style }}
+
+        # Create a new partition that uses all available space and assign a drive letter
+        $partition = New-Partition -DiskNumber $disk.Number -UseMaximumSize -AssignDriveLetter
+
+        # Format the partition as NTFS with a custom cluster size and assign a label
+        Format-Volume -Partition $partition -FileSystem {{ file_system_type }} -AllocationUnitSize {{ allocation_unit_size }} -NewFileSystemLabel "{{ volume_label }}" -Confirm:$false
+
+        # Retrieve the assigned drive letter
+        $driveLetter = (Get-Partition -PartitionNumber $partition.PartitionNumber -DiskNumber $disk.Number).DriveLetter
+
+        Write-Host "Disk number $($disk.Number) has been initialized, formatted, and assigned drive letter ${driveLetter}:"
+    }
+
+- name: Create no_SMS_drive.sms on multiple drives
+  tags: mecm
+  vars:
+    drives:
+      - "C:"
+      - "E:"
+      - "F:"
+      - "G:"
+  ansible.windows.win_file:
+    path: "{{ item }}\\NO_SMS_ON_DRIVE.SMS"
+    state: touch
+  loop: "{{ drives }}"
+
+
+- name: Install SCCM/MECM prerequisite features
+  tags: mecm
+  ansible.windows.win_feature:
+    name:
+      - Net-Framework-Features
+      - Net-Framework-45-Features
+      - Net-Framework-Core
+      - Web-Server
+      - Web-Static-Content
+      - Web-Default-Doc
+      - Web-Dir-Browsing
+      - Web-Http-Errors
+      - Web-Http-Logging
+      - Web-Request-Monitor
+      - Web-Stat-Compression
+      - Web-Filtering
+      - Web-Http-Tracing
+      - Web-Basic-Auth
+      - Web-Windows-Auth
+      - Web-Digest-Auth
+      - Web-Dyn-Compression
+      - Web-Net-Ext45
+      - Web-Asp-Net45
+      - Web-ASP
+      - Web-Asp-Net
+      - Web-ISAPI-Ext
+      - Web-ISAPI-Filter
+      - Web-Mgmt-Console
+      - Web-Mgmt-Compat
+      - Web-Metabase
+      - Web-WMI
+      - Web-Scripting-Tools
+      - Web-Mgmt-Service
+      - BITS
+      - BITS-Compact-Server
+      - RDC
+      - FS-FileServer
+    state: present
+    include_management_tools: yes
